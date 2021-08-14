@@ -1,4 +1,5 @@
 import {createAction,handleActions} from 'redux-actions';
+import produce from 'immer';
 
 // 액션 정의
 const INSERT = 'todos/INSERT';
@@ -39,7 +40,7 @@ export const insert = createAction(INSERT, text => ({
     done:false
 }));
 export const toggle = createAction(TOGGLE, id=>id);
-export const remove = createAction(REMOVE);
+export const remove = createAction(REMOVE, id=> id);
 
 // 리듀서
 const initialState = {
@@ -90,10 +91,24 @@ const initialState = {
 //     }
 // }
 
-const todos = () => handleActions({
-    [INSERT]: (state,action) => ({...state, todos: state.todos.concat(action.payload)}),
-    [CHANGE_INPUT]: (state,action) => ({...state, input: action.payload}),
-    [REMOVE]: (state,action) => ({...state, todos: state.todos.filter((todo) => (todo.id !== action.payload))}),
-    [TOGGLE]: (state,{payload: id}) => ({...state, todos: state.todos.map((todo) => todo.id === id ? {...todo,done: !todo.done} : todo)})
-})
+// const todos = handleActions({
+//     [INSERT]: (state,action) => ({...state, todos: state.todos.concat(action.payload)}),
+//     [CHANGE_INPUT]: (state,action) => ({...state, input: action.payload}),
+//     [REMOVE]: (state,action) => ({...state, todos: state.todos.filter((todo) => (todo.id !== action.payload))}),
+//     [TOGGLE]: (state,{payload: id}) => ({...state, todos: state.todos.map((todo) => todo.id === id ? {...todo,done: !todo.done} : todo)})
+// }, initialState)
+
+// immer 사용 버전
+const todos = handleActions({
+    [INSERT]: (state,{payload:todo}) => produce(state,draft => {draft.todos.push(todo)}),
+    [CHANGE_INPUT]: (state,{payload:input}) => produce(state,draft => {draft.input = input}),
+    [REMOVE]: (state,{payload: id}) => produce(state,draft => {
+        const index = draft.todos.findIndex(todo => todo.id === id);
+        draft.todos.splice(index,1);
+    }),
+    [TOGGLE]: (state,{payload: id}) => produce(state,draft => {
+        const todo = draft.todos.find(todo => todo.id === id);
+        todo.done = !todo.done;
+    }),
+}, initialState)
 export default todos;
